@@ -107,7 +107,8 @@ class SpotifyWeb {
             setInterval(this.refreshAccessToken, (data.expires_in / 2) * 1000);
             await this.refreshAccessToken();
         }else{
-            console.log('[SpotifyWeb] No access token found. Please login at http://localhost:5001/login');
+            let publicIp = await import("public-ip");
+            console.log('[SpotifyWeb] No access token found. Please login at http://'+(await publicIp.v4())+':5001/login');
         }
     }
 
