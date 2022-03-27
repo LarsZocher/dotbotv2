@@ -1,11 +1,10 @@
 'use strict';
-const prompt = require('prompt');
-const { PROJECT_ID, SESSION_ID, LANGUAGE_CODE } = require('./constants');
-const SpotifyWeb = require('./spotify');
+import prompt from 'prompt';
+import { PROJECT_ID, SESSION_ID, LANGUAGE_CODE } from'./constants.js';
+import SpotifyWeb from'./spotify.js';
+import 'dotenv/config'
 
 const spotify = new SpotifyWeb();
-
-require('dotenv').config();
 
 async function start(){
     await spotify.start();

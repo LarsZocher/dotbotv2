@@ -1,7 +1,8 @@
-var SpotifyWebApi = require('spotify-web-api-node');
-var express = require('express');
-var fs = require('fs');
-const { time } = require('./utils');
+import SpotifyWebApi from 'spotify-web-api-node';
+import express from 'express';
+import fs from 'fs';
+import publicIp from 'public-ip';
+import { time } from './utils.js';
 
 // permissions to request
 const scopes = [
@@ -107,8 +108,7 @@ class SpotifyWeb {
             setInterval(this.refreshAccessToken, (data.expires_in / 2) * 1000);
             await this.refreshAccessToken();
         }else{
-            let publicIp = await import("public-ip");
-            console.log('[SpotifyWeb] No access token found. Please login at http://'+(await publicIp.v4())+':5001/login');
+            console.log('[SpotifyWeb] No access token found. Please login at '+(process.env.SPOTIFY_HOST || "http://" + await publicIp.v4())+':5001/login');
         }
     }
 
@@ -145,4 +145,4 @@ class SpotifyWeb {
     }
 }
 
-module.exports = SpotifyWeb;
+export default SpotifyWeb;
