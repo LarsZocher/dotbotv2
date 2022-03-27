@@ -32,10 +32,12 @@ class SpotifyWeb {
     expressApp;
 
     async start() {
+        const redirectURL = process.env.SPOTIFY_REDIRECT_URI || "http://"+await publicIp.v4() + ":5001/callback";
+
         this.spotifyApi = new SpotifyWebApi({
             clientId: process.env.SPOTIFY_CLIENT_ID,
             clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-            redirectUri: process.env.SPOTIFY_REDIRECT_URI
+            redirectUri: redirectURL
         });
 
         this.expressApp = express();
@@ -88,10 +90,6 @@ class SpotifyWeb {
     async refreshAccessToken() {
         const data = await this.spotifyApi.refreshAccessToken();
         const access_token = data.body['access_token'];
-        const refresh_token = data.body['refresh_token'];
-        const expires_in = data.body['expires_in'];
-
-        this.saveAccessToken(access_token, refresh_token, expires_in);
 
         console.log('[SpotifyWeb] The access token has been refreshed!');
         console.log('[SpotifyWeb] access_token:', access_token);
@@ -108,7 +106,8 @@ class SpotifyWeb {
             setInterval(this.refreshAccessToken, (data.expires_in / 2) * 1000);
             await this.refreshAccessToken();
         }else{
-            console.log('[SpotifyWeb] No access token found. Please login at '+(process.env.SPOTIFY_HOST || "http://" + await publicIp.v4())+':5001/login');
+            const host = process.env.SPOTIFY_HOST || "http://"+await publicIp.v4();
+            console.log('[SpotifyWeb] No access token found. Please login at '+host+':5001/login');
         }
     }
 

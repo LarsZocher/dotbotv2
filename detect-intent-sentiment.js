@@ -2,6 +2,7 @@
 import prompt from 'prompt';
 import { PROJECT_ID, SESSION_ID, LANGUAGE_CODE } from'./constants.js';
 import SpotifyWeb from'./spotify.js';
+import {v2 as dialogflow} from '@google-cloud/dialogflow';
 import 'dotenv/config'
 
 const spotify = new SpotifyWeb();
@@ -36,10 +37,6 @@ async function handleIntent(result) {
 }
 
 async function handleInput(query) {
-    // [START dialogflow_detect_intent_with_sentiment_analysis]
-    // Imports the Dialogflow client library
-    const dialogflow = require('@google-cloud/dialogflow').v2;
-
     // Instantiate a DialogFlow client.
     const sessionClient = new dialogflow.SessionsClient();
 
