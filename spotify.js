@@ -72,7 +72,7 @@ class SpotifyWeb {
                     console.log(`[SpotifyWeb] Sucessfully retreived access token. Expires in ${expires_in} s.`);
                     res.send('Success! You can now close the window.');
         
-                    setInterval(this.refreshAccessToken, (expires_in / 2) * 1000);
+                    setInterval(()=>this.refreshAccessToken, (expires_in / 2) * 1000);
                 })
                 .catch((error) => {
                     console.error('[SpotifyWeb] Error getting Tokens:', error);
@@ -103,7 +103,7 @@ class SpotifyWeb {
             this.spotifyApi.setRefreshToken(data.refresh_token);
             console.log('[SpotifyWeb] Access token loaded from file.');
 
-            setInterval(this.refreshAccessToken, (data.expires_in / 2) * 1000);
+            setInterval(()=>this.refreshAccessToken, (data.expires_in / 2) * 1000);
             await this.refreshAccessToken();
         }else{
             const host = process.env.SPOTIFY_HOST || "http://"+await publicIp.v4();
@@ -113,6 +113,10 @@ class SpotifyWeb {
 
     saveAccessToken(access_token, refresh_token, expires_in) {
         fs.writeFileSync('./access_token.json', JSON.stringify({access_token, refresh_token, expires_in: expires_in}));
+    }
+
+    async checkActiveDevice() {
+        
     }
 
     async playTrack(track) {
