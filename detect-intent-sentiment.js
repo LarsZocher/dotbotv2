@@ -4,6 +4,7 @@ import { PROJECT_ID, SESSION_ID, LANGUAGE_CODE } from'./constants.js';
 import SpotifyWeb from'./spotify.js';
 import {v2 as dialogflow} from '@google-cloud/dialogflow';
 import 'dotenv/config'
+import { getTodaysFood } from './siemens-food.js';
 
 const spotify = new SpotifyWeb();
 
@@ -33,6 +34,13 @@ async function handleIntent(result) {
         }
         if (!result.parameters.fields.any.stringValue) await spotify.playArtist(track);
         else await spotify.playTrack(track);
+    }
+    if(result.intent.displayName === 'SIEMENS_FOOD'){
+        console.log("Loading food...");
+        let food = await getTodaysFood();
+        console.log("Heute:")
+        console.log("Vegetarisch: ------------\n", food[0]);
+        console.log("Fleisch:  ------------\n", food[1]);
     }
 }
 
