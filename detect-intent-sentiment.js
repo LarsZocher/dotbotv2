@@ -1,14 +1,14 @@
 'use strict';
 import prompt from 'prompt';
-import { PROJECT_ID, SESSION_ID, LANGUAGE_CODE } from'./constants.js';
-import SpotifyWeb from'./spotify.js';
-import {v2 as dialogflow} from '@google-cloud/dialogflow';
-import 'dotenv/config'
+import { PROJECT_ID, SESSION_ID, LANGUAGE_CODE } from './constants.js';
+import SpotifyWeb from './spotify.js';
+import { v2 as dialogflow } from '@google-cloud/dialogflow';
+import 'dotenv/config';
 import { getTodaysFood } from './siemens-food.js';
 
 const spotify = new SpotifyWeb();
 
-async function start(){
+async function start() {
     await spotify.start();
     startNewPrompt();
 }
@@ -35,12 +35,12 @@ async function handleIntent(result) {
         if (!result.parameters.fields.any.stringValue) await spotify.playArtist(track);
         else await spotify.playTrack(track);
     }
-    if(result.intent.displayName === 'SIEMENS_FOOD'){
-        console.log("Loading food...");
+    if (result.intent.displayName === 'SIEMENS_FOOD') {
+        console.log('Loading food...');
         let food = await getTodaysFood();
-        console.log("Heute:")
-        console.log("Vegetarisch: ------------\n", food[0]);
-        console.log("Fleisch:  ------------\n", food[1]);
+        console.log('Heute:');
+        console.log('Vegetarisch: ------------\n', food[0]);
+        console.log('Fleisch:  ------------\n', food[1]);
     }
 }
 
@@ -83,8 +83,10 @@ async function handleInput(query) {
         if (Object.keys(result.parameters.fields).length) {
             console.log(`  Parameters:`);
             for (const key of Object.keys(result.parameters.fields)) {
-                if(result.parameters.fields[key].stringValue) console.log(`    ${key}: ${result.parameters.fields[key].stringValue}`);
-                if(result.parameters.fields[key].listValue && result.parameters.fields[key].listValue.values[0]) console.log(`    ${key}: ${result.parameters.fields[key].listValue.values[0].stringValue}`);
+                if (result.parameters.fields[key].stringValue)
+                    console.log(`    ${key}: ${result.parameters.fields[key].stringValue}`);
+                if (result.parameters.fields[key].listValue && result.parameters.fields[key].listValue.values[0])
+                    console.log(`    ${key}: ${result.parameters.fields[key].listValue.values[0].stringValue}`);
             }
         }
         if (result.sentimentAnalysisResult) {

@@ -31,6 +31,20 @@ class SpotifyWeb {
     spotifyApi;
     expressApp;
 
+    constructor(da) {
+        da.onIntent("SPOTIFY_PLAY", async result=>{
+            let track = '';
+            for (const key of Object.keys(result.parameters.fields)) {
+                if (result.parameters.fields[key].stringValue) track += ' ' + result.parameters.fields[key].stringValue;
+                if (result.parameters.fields[key].listValue && result.parameters.fields[key].listValue.values[0]) {
+                    track += ' ' + result.parameters.fields[key].listValue.values[0].stringValue;
+                }
+            }
+            if (!result.parameters.fields.any.stringValue) await this.playArtist(track);
+            else await this.playTrack(track);
+        })
+    }
+
     async start() {
         const redirectURL = process.env.SPOTIFY_REDIRECT_URI || "http://"+await publicIp.v4() + ":5001/callback";
 
@@ -134,6 +148,10 @@ class SpotifyWeb {
 
     async playArtist(artist) {
         let data = await this.spotifyApi.searchArtists(artist);
+        if(data.body.artists.items.length == 0) {
+            console.log('[SpotifyWeb] No artist found.');
+            return;
+        }
         let tracks = await this.spotifyApi.getArtistTopTracks(data.body.artists.items[0].id, 'DE');
         let randomTrack = tracks.body.tracks[Math.floor(Math.random() * tracks.body.tracks.length)];
         if(!randomTrack) {
