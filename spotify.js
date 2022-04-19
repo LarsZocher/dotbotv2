@@ -2,7 +2,6 @@ import SpotifyWebApi from 'spotify-web-api-node';
 import express from 'express';
 import fs from 'fs';
 import publicIp from 'public-ip';
-import { time } from './utils.js';
 import Bot from './bot.js';
 
 // permissions to request
