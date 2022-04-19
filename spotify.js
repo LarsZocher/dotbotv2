@@ -3,6 +3,7 @@ import express from 'express';
 import fs from 'fs';
 import publicIp from 'public-ip';
 import { time } from './utils.js';
+import Bot from './bot.js';
 
 // permissions to request
 const scopes = [
@@ -31,22 +32,39 @@ class SpotifyWeb {
     spotifyApi;
     expressApp;
 
-    constructor(da) {
-        da.onIntent("SPOTIFY_PLAY", async result=>{
+    registerIntents() {
+        const overrideResult = (result) => {
+            result = result.replaceAll('was von', '');
+            result = result.replaceAll('von', '');
+            result = result.replaceAll('rafka Mora', 'Raf Camora');
+            result = result.replaceAll(/\s{2,}/g, ' ');
+            return result;
+        };
+
+        Bot.getInstance().da.onIntent('SPOTIFY_PLAY_TRACK', async (result) => {
             let track = '';
-            for (const key of Object.keys(result.parameters.fields)) {
-                if (result.parameters.fields[key].stringValue) track += ' ' + result.parameters.fields[key].stringValue;
-                if (result.parameters.fields[key].listValue && result.parameters.fields[key].listValue.values[0]) {
-                    track += ' ' + result.parameters.fields[key].listValue.values[0].stringValue;
-                }
-            }
-            if (!result.parameters.fields.any.stringValue) await this.playArtist(track);
-            else await this.playTrack(track);
-        })
+            //console.log(result.parameters.fields.any.listValue.values);
+            if (result.parameters.fields.any.kind === 'listValue')
+                track = result.parameters.fields.any.listValue.values.map(v => v.stringValue).join(' ');
+            if (result.parameters.fields.any.kind === 'stringValue') track = result.parameters.fields.any.stringValue;
+            track = overrideResult(track);
+            console.log('[SpotifyWeb] Requested track:', track);
+            await this.playTrack(track);
+        });
+        Bot.getInstance().da.onIntent('SPOTIFY_PLAY_ARTIST', async (result) => {
+            let artist = '';
+            //console.log(result.parameters.fields.any.listValue.values);
+            if (result.parameters.fields.any.kind === 'listValue')
+                artist = result.parameters.fields.any.listValue.values.map(v => v.stringValue).join(' ');
+            if (result.parameters.fields.any.kind === 'stringValue') artist = result.parameters.fields.any.stringValue;
+            artist = overrideResult(artist);
+            console.log('[SpotifyWeb] Reqested artist:', artist);
+            await this.playArtist(artist);
+        });
     }
 
     async start() {
-        const redirectURL = process.env.SPOTIFY_REDIRECT_URI || "http://"+await publicIp.v4() + ":5001/callback";
+        const redirectURL = process.env.SPOTIFY_REDIRECT_URI || 'http://' + (await publicIp.v4()) + ':5001/callback';
 
         this.spotifyApi = new SpotifyWebApi({
             clientId: process.env.SPOTIFY_CLIENT_ID,
@@ -61,32 +79,32 @@ class SpotifyWeb {
         this.expressApp.get('/callback', (req, res) => {
             const error = req.query.error;
             const code = req.query.code;
-        
+
             if (error) {
                 console.error('[SpotifyWeb] Callback Error:', error);
                 res.send(`Callback Error: ${error}`);
                 return;
             }
-        
+
             this.spotifyApi
                 .authorizationCodeGrant(code)
                 .then((data) => {
                     const access_token = data.body['access_token'];
                     const refresh_token = data.body['refresh_token'];
                     const expires_in = data.body['expires_in'];
-        
+
                     this.spotifyApi.setAccessToken(access_token);
                     this.spotifyApi.setRefreshToken(refresh_token);
-        
+
                     console.log('[SpotifyWeb] access_token:', access_token);
                     console.log('[SpotifyWeb] refresh_token:', refresh_token);
 
-                    this.saveAccessToken(access_token, refresh_token, expires_in);
-        
+                    this.saveRefreshToken(refresh_token);
+
                     console.log(`[SpotifyWeb] Sucessfully retreived access token. Expires in ${expires_in} s.`);
                     res.send('Success! You can now close the window.');
-        
-                    setInterval(()=>this.refreshAccessToken, (expires_in / 2) * 1000);
+
+                    setInterval(() => this.refreshAccessToken, (expires_in / 2) * 1000);
                 })
                 .catch((error) => {
                     console.error('[SpotifyWeb] Error getting Tokens:', error);
@@ -94,11 +112,13 @@ class SpotifyWeb {
                 });
         });
         // Wait for the server to start listening
-        await new Promise(res=>this.expressApp.listen(5001, async () => {
-            console.log('[SpotifyWeb] HTTP Server up.');
-            await this.authenticate();
-            res();
-        }));
+        await new Promise((res) =>
+            this.expressApp.listen(5001, async () => {
+                console.log('[SpotifyWeb] HTTP Server up.');
+                await this.authenticate();
+                res();
+            })
+        );
     }
 
     async refreshAccessToken() {
@@ -111,50 +131,63 @@ class SpotifyWeb {
     }
 
     async authenticate() {
-        if(fs.existsSync('./access_token.json')) {
+        if (fs.existsSync('./access_token.json')) {
             let data = JSON.parse(fs.readFileSync('./access_token.json'));
-            this.spotifyApi.setAccessToken(data.access_token);
             this.spotifyApi.setRefreshToken(data.refresh_token);
             console.log('[SpotifyWeb] Access token loaded from file.');
 
-            setInterval(()=>this.refreshAccessToken, (data.expires_in / 2) * 1000);
+            setInterval(() => this.refreshAccessToken(), 1000 * 60 * 30);
             await this.refreshAccessToken();
-        }else{
-            const host = process.env.SPOTIFY_HOST || "http://"+await publicIp.v4();
-            console.log('[SpotifyWeb] No access token found. Please login at '+host+':5001/login');
+        } else {
+            const host = process.env.SPOTIFY_HOST || 'http://' + (await publicIp.v4());
+            console.log('[SpotifyWeb] No access token found. Please login at ' + host + ':5001/login');
         }
     }
 
-    saveAccessToken(access_token, refresh_token, expires_in) {
-        fs.writeFileSync('./access_token.json', JSON.stringify({access_token, refresh_token, expires_in: expires_in}));
+    saveRefreshToken(refresh_token) {
+        fs.writeFileSync('./access_token.json', JSON.stringify({ refresh_token }));
     }
 
     async checkActiveDevice() {
-        
+        let devices = await this.spotifyApi.getMyDevices();
+        let noActiveDevice = devices.body.devices.every((device) => !device.is_active);
+        if (devices.body.devices.length === 0) {
+            console.log('[SpotifyWeb] No devices found.');
+            return false;
+        }
+        if (noActiveDevice) {
+            await this.spotifyApi.transferMyPlayback([devices.body.devices[0].id]);
+        }
     }
 
     async playTrack(track) {
-        let data = await this.spotifyApi.searchTracks(track);
-        if(data.body.tracks.items.length == 0) {
-            console.log('[SpotifyWeb] No track found.');
-            return;
+        try {
+            await this.checkActiveDevice();
+            let data = await this.spotifyApi.searchTracks(track);
+            if (data.body.tracks.items.length == 0) {
+                console.log('[SpotifyWeb] No track found.');
+                return;
+            }
+            console.log('[SpotifyWeb] Search by track:', track);
+            console.log('[SpotifyWeb] Tracks:', data.body.tracks.items[0].uri);
+            this.spotifyApi.play({
+                uris: [data.body.tracks.items[0].uri]
+            });
+        } catch (e) {
+            console.log('[SpotifyWeb] Error:', e);
         }
-        console.log('[SpotifyWeb] Search by track:', track);
-        console.log('[SpotifyWeb] Tracks:', data.body.tracks.items[0].uri);
-        this.spotifyApi.play({
-            uris: [data.body.tracks.items[0].uri]
-        });
     }
 
     async playArtist(artist) {
+        await this.checkActiveDevice();
         let data = await this.spotifyApi.searchArtists(artist);
-        if(data.body.artists.items.length == 0) {
+        if (data.body.artists.items.length == 0) {
             console.log('[SpotifyWeb] No artist found.');
             return;
         }
         let tracks = await this.spotifyApi.getArtistTopTracks(data.body.artists.items[0].id, 'DE');
         let randomTrack = tracks.body.tracks[Math.floor(Math.random() * tracks.body.tracks.length)];
-        if(!randomTrack) {
+        if (!randomTrack) {
             console.log('[SpotifyWeb] No track found.');
             return;
         }

@@ -1,6 +1,7 @@
-import { Builder, By, Key, until, Capabilities } from 'selenium-webdriver';
+import { Builder, By } from 'selenium-webdriver';
 import * as chrome from 'selenium-webdriver/chrome.js';
 import fs from 'fs';
+import Bot from './bot.js';
 
 const screen = {
     width: 1920,
@@ -21,9 +22,9 @@ async function takeScreenshot(driver) {
 
 async function loadCatering() {
     driver = await new Builder().forBrowser('chrome').setChromeOptions(new chrome.Options().headless().windowSize(screen)).build();
-    await driver.get('https://siemens.cateringportal.io/menu/Stuttgart%20W/Mittagessen');
+    await driver.get('https://siemens.cateringportal.io/menu/Stuttgart%20S/Mittagessen');
     await driver.manage().addCookie({ name: 'qnips_language', value: 'de-DE' });
-    await driver.get('https://siemens.cateringportal.io/menu/Stuttgart%20W/Mittagessen');
+    await driver.get('https://siemens.cateringportal.io/menu/Stuttgart%20S/Mittagessen');
     await driver.wait(function () {
         return driver.findElements(By.css('h3.category-header.ng-star-inserted')).then((found) => !!found.length);
     }, 20 * 1000);
@@ -37,6 +38,19 @@ export const getTodaysFood = async () => {
     els = [await els[0].getText(), await els[1].getText()];
     driver.close();
     return els;
+}
+
+export const registerIntents = () => {
+    Bot.getInstance().da.onIntent("SIEMENS_FOOD", async()=>{
+        Bot.getInstance().tts.synthesizeSpeech("Ich schau mal");
+        console.log('Loading food...');
+        let food = await getTodaysFood();
+        console.log('Heute:');
+        console.log('Vegetarisch: ------------\n', food[0]);
+        console.log('Fleisch:  ------------\n', food[1]);
+
+        Bot.getInstance().tts.synthesizeSpeech("Heute gibt es " + food[0] + " und " + food[1]);
+    })
 }
 
 // (async function example() {

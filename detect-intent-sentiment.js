@@ -36,11 +36,7 @@ async function handleIntent(result) {
         else await spotify.playTrack(track);
     }
     if (result.intent.displayName === 'SIEMENS_FOOD') {
-        console.log('Loading food...');
-        let food = await getTodaysFood();
-        console.log('Heute:');
-        console.log('Vegetarisch: ------------\n', food[0]);
-        console.log('Fleisch:  ------------\n', food[1]);
+        
     }
 }
 

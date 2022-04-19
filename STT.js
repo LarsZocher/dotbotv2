@@ -35,4 +35,8 @@ export default class SpeechToText {
         });
         this.recording.stream().on('error', console.error).pipe(recognizeStream);
     }
+
+    stopRecording() {
+        this.recording.stop();
+    }
 }
