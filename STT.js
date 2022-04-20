@@ -1,6 +1,7 @@
 import recorder from 'node-record-lpcm16';
 import speech from '@google-cloud/speech';
 import { ENCODING, SAMPLE_RATE_HZ, LANGUAGE_CODE } from './constants.js';
+import Bot from './bot.js';
 
 export default class SpeechToText {
     constructor() {
@@ -17,6 +18,7 @@ export default class SpeechToText {
     }
 
     async recordStream(callback) {
+        this.isRecording = true;
         const recognizeStream = this.client
             .streamingRecognize(this.request)
             .on('error', console.error)
@@ -37,6 +39,8 @@ export default class SpeechToText {
     }
 
     stopRecording() {
+        if(!this.isRecording) return;
         this.recording.stop();
+        this.isRecording = false;
     }
 }

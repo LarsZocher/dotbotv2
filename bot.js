@@ -15,6 +15,8 @@ export default class Bot {
         return Bot.instance;
     };
 
+    isMuted = false;
+
     constructor() {
         Bot.instance = this;
 
@@ -38,11 +40,21 @@ export default class Bot {
         console.log(Object.keys(this.da.registeredIntentHandlers).length + ' Intent handlers registered');
     }
 
+    async mute() {
+        this.hwd.stop();
+        this.stt.stopRecording();
+    }
+
+    async unmute() {
+        this.hwd.start();
+    }
+
     async start() {
         await this.spotify.start();
 
         const recordStream = () => {
             this.stt.recordStream(async (data, transcript) => {
+                if(this.isMuted) return;
                 console.log(data);
                 console.log('STT: ', transcript);
                 let result = await this.da.detectIntent(transcript);
@@ -64,6 +76,11 @@ export default class Bot {
         });
 
         this.hwd.start();
+
+        this.groveKit.setLED(true);
+        setTimeout(()=>this.groveKit.setLED(false), 500);
+        setTimeout(()=>this.groveKit.setLED(true), 1000);
+        setTimeout(()=>this.groveKit.setLED(false), 1500);
     }
 }
 
