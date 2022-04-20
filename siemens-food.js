@@ -49,7 +49,7 @@ export const registerIntents = () => {
         console.log('Vegetarisch: ------------\n', food[0]);
         console.log('Fleisch:  ------------\n', food[1]);
 
-        Bot.getInstance().tts.synthesizeSpeech("Heute gibt es " + food[0] + " und " + food[1]);
+        Bot.getInstance().tts.synthesizeSpeech("Heute gibt es als Vegetarisches Gericht:" + food[0] + " und als Fleisch Gericht: " + food[1]);
     })
 }
 

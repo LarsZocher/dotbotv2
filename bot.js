@@ -6,6 +6,7 @@ import DialogAgent from './DialogAgent.js';
 import * as SiemensFood from './siemens-food.js';
 import * as Siemens from './intents/siemens.js';
 import TextToSpeech from './TTS.js';
+import GroveKit from './GroveKit.js';
 
 export default class Bot {
     static instance;
@@ -22,6 +23,10 @@ export default class Bot {
         this.da = new DialogAgent();
         this.tts = new TextToSpeech();
         this.spotify = new SpotifyWeb();
+        if(process.env.ENABLE_GROVE_KIT == "true"){
+            console.log("loading grove kit");
+            this.groveKit = new GroveKit();
+        }
 
         this.registerIntents();
     }
