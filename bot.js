@@ -72,6 +72,8 @@ export default class Bot {
         this.hwd.onDetected((index) => {
             console.log(index);
             this.hwd.stop();
+            this.groveKit.setLED(true);
+            setTimeout(()=>this.groveKit.setLED(false), 200);
             recordStream();
         });
 
